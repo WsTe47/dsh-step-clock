@@ -1,5 +1,5 @@
 /**
- * @climber47/dsh-step-clock — browser half styles.
+ * @crimber47/dsh-step-clock — browser half styles.
  *
  * Kept beside the component so the bundle's injected stylesheet has a readable
  * source. Colours and geometry come from dsh theme tokens and the composer
@@ -7,7 +7,7 @@
  * breaking the bar. The `--dsh-composer-*` variables are declared on the
  * conversation root, which is an ancestor of both dock seats.
  *
- * @module @climber47/dsh-step-clock/client/styles
+ * @module @crimber47/dsh-step-clock/client/styles
  */
 
 export const CSS = [

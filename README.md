@@ -50,7 +50,7 @@ A step is frequently over in well under a second, so a bar that exists only *dur
 ## Install
 
 ```sh
-dsh plugin --profile web add @climber47/dsh-step-clock
+dsh plugin --profile web add @WsTe47/dsh-step-clock
 ```
 
 Then restart `dsh web`. The bar appears above the composer during the next running step.

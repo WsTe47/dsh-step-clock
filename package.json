@@ -1,5 +1,5 @@
 {
-  "name": "@climber47/dsh-step-clock",
+  "name": "@crimber47/dsh-step-clock",
   "version": "0.1.0",
   "description": "Live per-step elapsed-time clock for the DeepSeek Harness web GUI: shows which step is running, which tools it is running, and how long it has been going.",
   "keywords": [
@@ -57,6 +57,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/climber47/dsh-step-clock.git"
+    "url": "git+https://github.com/WsTe47/dsh-step-clock.git"
   }
 }

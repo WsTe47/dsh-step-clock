@@ -30,7 +30,7 @@ function loadBundle() {
 
   assert.equal(registrations.length, 1, 'the bundle must register exactly one module')
   const entry = registrations[0]
-  assert.equal(entry.id, '@climber47/dsh-step-clock')
+  assert.equal(entry.id, '@crimber47/dsh-step-clock')
   assert.equal(typeof entry.factory, 'function', 'the registration must carry a factory')
 
   const fakeReact = {

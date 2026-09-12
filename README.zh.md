@@ -50,7 +50,7 @@ Harness 本身已在对话底部显示一个轮次（turn）级时钟，但它**
 ## 安装
 
 ```sh
-dsh plugin --profile web add @climber47/dsh-step-clock
+dsh plugin --profile web add @WsTe47/dsh-step-clock
 ```
 
 然后重启 `dsh web`。下一次有步骤运行时，状态条就会出现在输入框上方。
