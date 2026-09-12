@@ -1,6 +1,22 @@
+# Independent review of `@climber47/dsh-step-clock@0.1.0`
+
+> **Summary (English).** This is the review that found the defect shipped in
+> 0.1.0. The package declared `inject: ['slots', 'styles', 'timer']`, but
+> `styles` is **not a Cordis service** — it is a builtin handed only to the
+> *dynamic* plugin evaluator. Cordis parks a plugin whose declared service is
+> missing and waits indefinitely instead of throwing, so 0.1.0 installed
+> cleanly, logged no error, and never rendered anything. Fixed in 0.1.1 by
+> dropping `styles` from `inject` and inserting the stylesheet on the DOM; the
+> build script now rejects any injected name outside a service allowlist.
+> Kept here because the pitfall is easy to reintroduce. The body is in Chinese.
+>
+> Method: line-by-line reading, checking every data assumption against dsh's own
+> type declarations, experiments against a real Cordis runtime, mutation testing
+> of the test suite, and loading the published artifact after a real npm install.
+
 # `@climber47/dsh-step-clock@0.1.0` 独立批判性评审
 
-评审范围：`/Users/climber47/dsh-step-clock`（4 commits，工作区干净）
+评审范围：`<repo>`（4 commits，工作区干净）
 评审方法：逐行读代码 + 在 dsh 自身类型定义中核对数据假设 + 用真实 Cordis 运行时做实验 + 变异测试验证测试有效性 + 从 npm 真实安装后加载产物。
 所有结论均附证据。标注「推测」的是我无法直接验证的推断。
 
@@ -64,7 +80,7 @@ export function apply(ctx) {
 声明 inject:[slots,timer]       的插件被调用了吗 -> true
 补上 styles 之后，第一个插件被调用了吗      -> true
 ```
-（`/tmp/inject-test.mjs`，import 真实 `cordis/lib/index.js`，只 provide `slots` 与 `timer`）
+（`<tmp>/inject-test.mjs`，import 真实 `cordis/lib/index.js`，只 provide `slots` 与 `timer`）
 
 **后果**：`dsh plugin add @climber47/dsh-step-clock` 会成功安装、终端无报错、浏览器控制台无报错、插件列表里显示已加载——**但输入框上方永远什么都不出现**。这正是最难排查的一类故障。
 
@@ -310,7 +326,7 @@ todo(0)/goal(10)/queue(20)/git-graph(100) 四条目**全部仍在**（`active: t
 
 **构建可复现（关键质量项）**：
 ```
-cp lib/client.js /tmp/client-before.js && npm run build && diff → 无差异
+cp lib/client.js <tmp>/client-before.js && npm run build && diff → 无差异
 git status --short → 空
 ```
 ✅ `lib/client.js` 与 `src/` 确实同步，`scripts/build-client.mjs` 的文本变换**没有静默出错**。
@@ -402,11 +418,11 @@ gh api repos/WsTe47/dsh-step-clock --jq .topics
 - **未修改插件仓库任何文件。** 为验证测试有效性做过 6 次变异，每次修改 `src/client/index.js`
   并重建 `lib/client.js`，**全部已还原**：
   ```
-  diff -q /tmp/lib-backup.js lib/client.js  → 一致
+  diff -q <tmp>/lib-backup.js lib/client.js  → 一致
   git status --short                        → 空（干净）
   npm run build                             → 与源码同步（无 diff）
   ```
-- **未触碰用户正在运行的 `web` profile 配置。** 唯一的安装实验在 `mktemp -d` 临时目录内完成并已删除。
+- **未触碰用户正在运行的 `web` profile 配置。** 唯一的安装实验在 `a temporary directory` 临时目录内完成并已删除。
 - 通过代理 `ALL_PROXY=socks5h://127.0.0.1:10886` 拉取了 awesome-dsh-plugin 的 `contributing.md`
   全文（223 行）用于逐条核对；直连会超时，已按要求走代理。
 
