@@ -1,0 +1,8 @@
+# dsh-step-clock bundle patch: inserts its plugin row into the web plugin roster.
+#
+# A single row mounts the package. This plugin has no host behaviour — the
+# browser half (exports "./client") is declared by `dsh.client` in package.json
+# and served from this package's lib/client.js by the client module host.
+- insert:
+    - id: step-clock
+      name: '@climber47/dsh-step-clock'

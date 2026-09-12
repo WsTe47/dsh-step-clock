@@ -1,0 +1,21 @@
+# 提交到 awesome-dsh-plugin 用（这是要开 PR 的那个文件，不是本仓库的一部分）
+#
+# 放到目标仓库的这个路径下（文件名必须严格是 <owner>__<repo>.yml）：
+#   data/plugins/climber47__dsh-step-clock.yml
+#
+# 目录 <category> 取值必须是下面之一：
+#   agi ui usage theme model identity session memory tools wsl browser
+#   vision voice docs skill workflow git notify dev security remote market fun
+#
+# 注意事项（来自 contributing.md）：
+#   1. url 必须与仓库地址完全一致。
+#   2. 只有 description.en 是必填；zh 可选，缺了维护者会补。
+#   3. 描述里若出现「: 」（半角冒号+空格）必须整体加引号，否则 YAML 会解析错。
+#   4. PR 只加这一个文件，不要动 README（README 是脚本生成的）。
+#   5. 仓库需创建满 1 天，CI 自动检查。
+url: https://github.com/climber47/dsh-step-clock
+name: climber47/dsh-step-clock
+category: ui
+description:
+  en: Shows the live elapsed time of the current agent step above the web composer, with the step number and the tools that step is running.
+  zh: 在网页版输入框上方实时显示当前智能体步骤已耗时的秒表，并显示步号与该步正在执行的工具。
