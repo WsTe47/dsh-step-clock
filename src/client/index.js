@@ -1,5 +1,5 @@
 /**
- * @crimber47/dsh-step-clock — browser half (readable source).
+ * @climber47/dsh-step-clock — browser half (readable source).
  *
  * The shipped file is `lib/client.js`, which wraps this component in the
  * `window.__ModuleLoader__.load({ id, factory })` registration shape a dsh
@@ -40,7 +40,7 @@
  *
  * The clock ticks from 0s with no delay threshold.
  *
- * @module @crimber47/dsh-step-clock/client
+ * @module @climber47/dsh-step-clock/client
  */
 
 import { CSS } from './styles.js'

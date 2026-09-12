@@ -29,7 +29,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const PACKAGE_ID = '@crimber47/dsh-step-clock'
+const PACKAGE_ID = '@climber47/dsh-step-clock'
 
 /** Read one source file, stripping its module syntax. */
 function moduleBody(relative) {

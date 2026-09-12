@@ -5,4 +5,4 @@
 # and served from this package's lib/client.js by the client module host.
 - insert:
     - id: step-clock
-      name: '@crimber47/dsh-step-clock'
+      name: '@climber47/dsh-step-clock'
