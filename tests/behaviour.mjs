@@ -90,7 +90,11 @@ test('bundle exports the expected shape', () => {
   assert.equal(typeof bundle.StepClock, 'function')
   assert.equal(typeof bundle.apply, 'function')
   assert.equal(typeof bundle.CSS, 'string')
-  assert.deepEqual(bundle.inject, ['slots', 'styles', 'timer'])
+  assert.deepEqual(bundle.inject, ['slots', 'timer'])
+  // `styles` is a dynamic-plugin evaluator builtin, not a Cordis service. Were
+  // it declared here, Cordis would wait for it forever and the plugin would
+  // load, report no error, and never render.
+  assert.ok(!bundle.inject.includes('styles'), 'inject must not declare the non-existent styles service')
 })
 
 test('running tool step names the tool and its own elapsed time', () => {
@@ -180,17 +184,24 @@ test('a missing or partial snapshot renders an idle bar rather than throwing', (
   assert.match(textOf(bundle.StepClock(props)), /空闲/)
 })
 
-test('apply registers one dock seat and owns its stylesheet', () => {
-  const calls = []
-  const ctx = {
-    styles: {
-      insert: (css) => {
-        calls.push(['styles.insert', typeof css === 'string' && css.length > 0])
-        return () => {}
-      },
+test('apply registers one dock seat and inserts its stylesheet on the DOM', () => {
+  const tags = []
+  const previousDocument = globalThis.document
+  globalThis.document = {
+    querySelector: () => null,
+    createElement: () => {
+      const tag = { dataset: {}, textContent: '', remove() {} }
+      tags.push(tag)
+      return tag
     },
+    head: { appendChild: () => {} },
+  }
+
+  const calls = []
+  const disposed = []
+  const ctx = {
     effect: (fn) => {
-      fn()
+      disposed.push(fn())
     },
     slots: {
       inject: (slot, callback) => {
@@ -204,15 +215,19 @@ test('apply registers one dock seat and owns its stylesheet', () => {
     },
   }
   bundle.apply(ctx)
+  globalThis.document = previousDocument
+
   const registered = calls.filter((entry) => entry[0] === 'slots.register')
   assert.equal(registered.length, 1, 'exactly one seat must be registered')
   assert.deepEqual(
     registered.map((entry) => [entry[1], entry[2]]),
     [['conversation.input.dock', 'step-clock']],
   )
+  assert.equal(tags.length, 1, 'apply must insert exactly one style tag')
+  assert.ok(disposed.length >= 1, 'the stylesheet must be owned by a fiber effect')
   assert.ok(
-    calls.some((entry) => entry[0] === 'styles.insert' && entry[1] === true),
-    'the stylesheet must be inserted',
+    disposed.every((value) => typeof value === 'function'),
+    'every effect must return a disposer',
   )
 })
 
@@ -278,4 +293,108 @@ test('a fresh load whose newest Turn is already closed still reports that step',
   })
   assert.match(text, /上一步（第 122 步）已完成/)
   assert.match(text, /3 分 44 秒/)
+})
+
+test('the bundle never reaches for a styles service', () => {
+  const source = readFileSync(join(root, 'lib/client.js'), 'utf8')
+  assert.doesNotMatch(source, /ctx\.styles/, 'a client plugin has no ctx.styles')
+  assert.match(source, /document\.createElement\('style'\)|document\.createElement\("style"\)/)
+})
+
+test('insertStyles owns one tag and its disposer removes it', () => {
+  const created = []
+  const previousDocument = globalThis.document
+  const makeTag = () => {
+    const tag = { dataset: {}, textContent: '', removed: false, remove() { this.removed = true } }
+    created.push(tag)
+    return tag
+  }
+  globalThis.document = {
+    querySelector: () => null,
+    createElement: (name) => {
+      assert.equal(name, 'style')
+      return makeTag()
+    },
+    head: { appendChild: (tag) => { tag.appended = true } },
+  }
+  const dispose = bundle.insertStyles()
+  assert.equal(created.length, 1, 'exactly one style tag')
+  assert.equal(created[0].appended, true, 'the tag must be appended')
+  assert.equal(created[0].dataset.pluginCss, '@climber47/dsh-step-clock/step-clock.css')
+  assert.ok(created[0].textContent.length > 0, 'the tag must carry the stylesheet')
+  dispose()
+  assert.equal(created[0].removed, true, 'the disposer must remove the tag')
+  globalThis.document = previousDocument
+})
+
+test('styling outside a browser degrades to a no-op instead of throwing', () => {
+  const previousDocument = globalThis.document
+  delete globalThis.document
+  const dispose = bundle.insertStyles()
+  assert.equal(typeof dispose, 'function')
+  dispose()
+  globalThis.document = previousDocument
+})
+
+test('tool names render as their own chip element, not only inside the sentence', () => {
+  // Regression for a mutation that survived the suite: turning chips off entirely
+  // kept every assertion green, because the tool names also appear in the prose.
+  clock = 1_700_000_000_000
+  const timeline = {
+    turnOrder: [7],
+    turns: new Map([[7, {
+      turn: 7,
+      status: 'open',
+      steps: [{ step: 3, status: 'open', start: { time: clock - 5_000 } }],
+    }]]),
+  }
+  const legacy = {
+    runningCalls: [
+      { name: 'bash', step: 3, time: clock - 5_000 },
+      { name: 'grep', step: 3, time: clock - 4_000 },
+    ],
+    partial: null,
+  }
+  const tree = bundle.StepClock({
+    useChat: (select) => select({ timeline, legacy }),
+    timer: { interval: () => () => {} },
+    sessionId: 'chip-structure',
+    now: clock,
+  })
+  const classes = []
+  const walk = (node) => {
+    if (node === null || node === undefined || typeof node !== 'object') return
+    if (Array.isArray(node)) { node.forEach(walk); return }
+    if (node.props && node.props.className) classes.push(node.props.className)
+    ;(node.children ?? []).forEach(walk)
+  }
+  walk(tree)
+  const chip = classes.find((name) => name.includes('dsh-stepclock-chip'))
+  assert.ok(chip !== undefined, 'a dedicated chip element must exist for the tool names')
+})
+
+test('two parallel tools are reported as a count, and the chip lists both', () => {
+  clock = 1_700_000_000_000
+  const text = render({
+    steps: [{ step: 3, status: 'open', start: { time: clock - 5_000 } }],
+    calls: [
+      { name: 'bash', step: 3, time: clock - 5_000 },
+      { name: 'grep', step: 3, time: clock - 4_000 },
+    ],
+    sessionId: 'chip-count',
+  })
+  assert.match(text, /另有 1 个工具并行/)
+  assert.match(text, /bash · grep/)
+})
+
+test('an unknown anchor shows an em dash instead of pretending it just started', () => {
+  clock = 1_700_000_000_000
+  // An open step whose start time is absent, and no running call to anchor on.
+  const text = render({
+    steps: [{ step: 9, status: 'open' }],
+    calls: [],
+    sessionId: 'no-anchor',
+  })
+  assert.match(text, /--:--/)
+  assert.doesNotMatch(text, /0:00/)
 })

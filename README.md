@@ -63,7 +63,7 @@ A dsh bundle, mounted as one inserted row:
 - `cordis.patch.yml` inserts the `step-clock` row.
 - `lib/index.js` is the (intentionally empty) host half. A bundle's row resolves the package root, so the package must be importable; this plugin has no host behaviour.
 - `lib/client.js` is the browser half, in the `window.__ModuleLoader__.load({ id, factory })` registration shape a client bundle must have. React is taken from the module loader via `require('react')` rather than bundled.
-- It registers two additive entries — `conversation.input.dock` above the composer and `conversation.composer.dock` below it — both `replaceRisk: none`, so every shipped todo / goal / queue / stats entry is untouched. It owns its stylesheet through `ctx.styles.insert`, disposed with its fiber.
+- It registers one additive entry in `conversation.input.dock` (`replaceRisk: none`, so every shipped todo / goal / queue entry is untouched) and injects its stylesheet by creating a tagged `<style>` element, removed when the plugin unloads.
 - The shipped bundle is generated from `src/client/` by `npm run build`, so the readable source and the artifact cannot drift; `npm test` rebuilds and drives the bundle through its real loader contract.
 
 It reads only facts the engine already publishes — the Chat timeline snapshot and the live running-call list — and polls nothing itself.

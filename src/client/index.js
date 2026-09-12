@@ -231,7 +231,7 @@ export function StepClock(props) {
       if (typeof began === 'number' && typeof ended === 'number' && ended >= began) {
         if (record.seenTurn !== candidate.turn || record.seenStep !== last.step) {
           record.final = record.pending
-          record.pending = { turn: candidate.turn, step: last.step, ms: ended - began, closedAt: now }
+          record.pending = { turn: candidate.turn, step: last.step, ms: ended - began }
           record.seenTurn = candidate.turn
           record.seenStep = last.step
         }
@@ -264,7 +264,9 @@ export function StepClock(props) {
       say = '已提交，正在等待模型响应，已等待 ' + humanDuration(elapsedMs)
       where = '第 ' + stepNumber + ' 步'
     }
-    clock = clockOf(elapsedMs)
+    // An unknown anchor must not render as `0:00`, which would read as
+    // "just started" when in fact the start is not known.
+    clock = anchor === null ? '--:--' : clockOf(elapsedMs)
   } else if (shown !== null) {
     // No step is running (yet). Keep reporting the previous step, so the gap
     // between a Turn closing and the next step starting — and a fresh page load
@@ -310,13 +312,44 @@ export function StepClock(props) {
 }
 
 /**
- * Services this plugin waits for before applying.
+ * Cordis services this plugin waits for before applying.
  *
- * Declared rather than assumed: `styles` and `slots` are owned by the renderer
- * module, and Cordis parks this plugin until they exist instead of calling
- * `apply` with a half-built context. `timer` supplies the ticking interval.
+ * Only real services belong here. Cordis parks a plugin whose declared service
+ * is missing and **waits indefinitely** — it does not throw — so adding a name
+ * that no provider offers silently produces a plugin that loads, reports no
+ * error, and never runs. `slots` owns registration; `timer` supplies the
+ * ticking interval.
+ *
+ * Notably absent: there is no `styles` service. Stylesheet insertion is done
+ * directly on the DOM below, which is what the shipped client plugins do.
  */
-export const inject = ['slots', 'styles', 'timer']
+export const inject = ['slots', 'timer']
+
+/** Style-tag identity, so re-mounting a second copy reuses one tag. */
+const STYLE_TAG = '@climber47/dsh-step-clock/step-clock.css'
+
+/**
+ * Insert the plugin's stylesheet once, returning its disposer.
+ *
+ * A client plugin has no stylesheet service to hand this to: the style element
+ * is created and owned by this plugin, tagged so a second instance reuses it,
+ * and removed when the plugin unloads.
+ * @returns a disposer removing the tag, or a no-op outside a browser.
+ */
+function insertStyles() {
+  if (typeof document === 'undefined') return function () {}
+  if (document.querySelector('style[data-plugin-css="' + STYLE_TAG + '"]') !== null) {
+    return function () {}
+  }
+  const tag = document.createElement('style')
+  tag.dataset.plugin = '@climber47/dsh-step-clock'
+  tag.dataset.pluginCss = STYLE_TAG
+  tag.textContent = CSS
+  document.head.appendChild(tag)
+  return function () {
+    tag.remove()
+  }
+}
 
 /**
  * Register the dock entry.
@@ -326,9 +359,7 @@ export const inject = ['slots', 'styles', 'timer']
  * `id` is added beside the shipped entries rather than replacing any of them.
  */
 export function apply(ctx) {
-  ctx.effect(function () {
-    return ctx.styles.insert(CSS)
-  })
+  ctx.effect(insertStyles)
   const mount = function (slot, id, order, label) {
     ctx.slots.inject(slot, function () {
       return ctx.slots.register({ name: slot, id: id, order: order }, function (props) {

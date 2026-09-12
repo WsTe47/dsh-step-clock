@@ -1,6 +1,6 @@
 {
   "name": "@climber47/dsh-step-clock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live per-step elapsed-time clock for the DeepSeek Harness web GUI: shows which step is running, which tools it is running, and how long it has been going.",
   "keywords": [
     "deepseek",

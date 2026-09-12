@@ -63,7 +63,8 @@ dsh plugin --profile web add @climber47/dsh-step-clock
 - `cordis.patch.yml` 插入 `step-clock` 行。
 - `lib/index.js` 是（有意为空的）宿主半边。bundle 的 insert 行会解析包根，所以包必须可被导入；本插件没有宿主行为。
 - `lib/client.js` 是浏览器半边，采用客户端 bundle 必须的 `window.__ModuleLoader__.load({ id, factory })` 注册形状。React 通过 `require('react')` 从模块加载器取得，不打包进产物。
-- 它注册**两个纯新增**条目——输入框上方的 `conversation.input.dock` 与下方的 `conversation.composer.dock`，两者都是 `replaceRisk: none`，不会动自带的 todo / goal / queue / stats 条目。样式通过 `ctx.styles.insert` 归属自身，随 fiber 一起销毁。
+- 它只注册**一个纯新增**条目：输入框上方的 `conversation.input.dock`（`replaceRisk: none`，不会动自带的 todo / goal / queue 条目）。样式通过创建一个带标记的 `<style>` 元素注入，插件卸载时移除。
+- 它只声明**真实存在**的服务（`slots`、`timer`）。客户端插件没有样式服务——`styles` 只存在于动态插件沙箱里。声明一个无人提供的服务会让 Cordis 无限期等待，插件会显示"已加载"、不报任何错，却永远不渲染。
 - 发布的 bundle 由 `npm run build` 从 `src/client/` 生成，因此可读源码与产物不会漂移；`npm test` 会先重新构建，再把 bundle 喂进它真实的加载器契约里跑行为测试。
 
 它只读取引擎**已经发布**的事实——Chat 时间线快照与运行中调用列表——自身不做任何轮询。

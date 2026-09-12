@@ -64,12 +64,38 @@ ${component}
 //#endregion
 		exports.StepClock = StepClock;
 		exports.CSS = CSS;
+		exports.insertStyles = insertStyles;
 		exports.apply = apply;
 		exports.inject = inject;
 		return module.exports;
 	}
 });
 `
+
+// A declared service that no provider offers makes Cordis park the plugin
+// forever without throwing, so a typo here is a silent no-render bug. `styles`
+// in particular is a dynamic-plugin evaluator builtin, NOT a service: it is
+// passed into the dynamic sandbox, and never provided on a client context.
+const SERVICE_ALLOWLIST = new Set(['slots', 'timer', 'theme', 'locale', 'sessions', 'remote'])
+// `component` already had its module syntax stripped, so match without `export`.
+const declared = /const inject = \[([^\]]*)\]/.exec(component)
+if (declared === null) throw new Error('src/client/index.js no longer declares `inject`')
+const names = declared[1]
+  .split(',')
+  .map((part) => part.trim().replace(/^['"]|['"]$/g, ''))
+  .filter((part) => part !== '')
+for (const name of names) {
+  if (!SERVICE_ALLOWLIST.has(name)) {
+    throw new Error(
+      `inject declares "${name}", which is not a known client service. ` +
+        'Cordis would wait for it forever and the plugin would never render. ' +
+        'If this is a genuine service, add it to SERVICE_ALLOWLIST deliberately.',
+    )
+  }
+}
+if (output.includes('ctx.styles')) {
+  throw new Error('the bundle references ctx.styles, which does not exist for a client plugin')
+}
 
 const target = join(root, 'lib/client.js')
 writeFileSync(target, output)
